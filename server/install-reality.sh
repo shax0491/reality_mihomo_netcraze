@@ -1,16 +1,18 @@
 #!/bin/bash
-# Установка VLESS + Reality (Xray) рядом с уже работающим сервером (AntiZapret, MTProxy и т.п.).
-# Два входа:
-#   8443 - выход в интернет с IP этого сервера;
-#   8445 - выход через WireGuard-интерфейс (например, Proton), если задан PROXY_IFACE.
-# Посторонний (сканер, браузер) на 8443/8445 видит ваш сайт-заглушку (LANDING_DOMAIN), а не прокси.
+# Установка VLESS + Reality (Xray) одной командой. Работает рядом с уже стоящим AntiZapret, MTProxy и т.п.
 #
-# Запуск (Ubuntu 22.04/24.04, Debian 12/13, под root):
-#   LANDING_DOMAIN=site.example.com LANDING_BACKEND=127.0.0.1:8444 PROXY_IFACE=warp-vpn bash install-reality.sh
-# LANDING_BACKEND - где уже отвечает HTTPS вашего сайта с настоящим сертификатом этого домена
-# (своя nginx на 127.0.0.1:8444, заглушка MTProxyL selfmask и т.п.). Если сайта ещё нет - см. README, раздел 2.
+# Самый простой вариант (без домена и сайта): Reality маскируется под крупный сайт (www.microsoft.com):
+#   curl -fsSL https://raw.githubusercontent.com/shax0491/reality_mihomo_netcraze/main/server/install-reality.sh | sudo bash
+#
+# Надёжнее - свой домен с сайтом-заглушкой (посторонний на порту видит ваш сайт с вашим сертификатом):
+#   ... | sudo LANDING_DOMAIN=site.example.com LANDING_BACKEND=127.0.0.1:8444 bash
+#
+# Два входа: PORT_DIRECT (8443) - выход с IP сервера; PORT_PROXY (8445) - через WireGuard-интерфейс, если задан
+# PROXY_IFACE (например warp-vpn у AntiZapret), иначе тоже с IP сервера.
+# Ubuntu 22.04/24.04, Debian 12/13, root. Ссылки для клиентов печатаются в конце и лежат в /opt/xray-reality/links.txt
 set -e
-: "${LANDING_DOMAIN:?укажите LANDING_DOMAIN}"
+: "${LANDING_DOMAIN:=www.microsoft.com}"
+[ "$LANDING_DOMAIN" = www.microsoft.com ] && : "${LANDING_BACKEND:=www.microsoft.com:443}"
 : "${LANDING_BACKEND:=127.0.0.1:8444}"
 : "${PROXY_IFACE:=}"
 : "${PORT_DIRECT:=8443}"
@@ -86,4 +88,4 @@ echo
 echo "Ссылки для клиентов (v2rayNG, Hiddify, NekoBox, mihomo/Clash Meta):"
 for p in "$PORT_DIRECT:direct" "$PORT_PROXY:proxy"; do
 	echo "vless://$UUID@$HOST:${p%%:*}?type=tcp&security=reality&pbk=$PUB&fp=chrome&sni=$LANDING_DOMAIN&sid=$SID&flow=xtls-rprx-vision#$(hostname)-${p##*:}"
-done
+done | tee $D/links.txt
