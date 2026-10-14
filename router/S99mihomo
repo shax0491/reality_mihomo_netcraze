@@ -1,0 +1,8 @@
+#!/bin/sh
+ENABLED=yes
+PROCS=mihomo
+ARGS="-d /opt/etc/mihomo"
+PREARGS=""
+DESC="mihomo (Clash Meta)"
+PATH=/opt/sbin:/opt/bin:/opt/usr/sbin:/opt/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin
+. /opt/etc/init.d/rc.func

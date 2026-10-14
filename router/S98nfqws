@@ -1,0 +1,12 @@
+#!/bin/sh
+# zapret (nfqws) на роутере: обход DPI для YouTube у соединений самого роутера (mihomo DIRECT).
+# Правило NFQUEUE - /opt/etc/ndm/netfilter.d/91-nfqws.sh (только цепочка OUTPUT, транзит сети не трогаем).
+# Стратегия как на zapret-gw (LXC 110).
+ENABLED=yes
+PROCS=nfqws
+ARGS="$(/opt/bin/zapret-args)"
+grep -q lua-init /opt/zapret/strategies/$(cat /opt/zapret/strategy 2>/dev/null).args 2>/dev/null && PROCS=nfqws2
+PREARGS=""
+DESC="zapret nfqws"
+PATH=/opt/sbin:/opt/bin:/opt/usr/sbin:/opt/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin
+. /opt/etc/init.d/rc.func
