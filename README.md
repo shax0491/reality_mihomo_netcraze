@@ -122,19 +122,19 @@ curl -s -o /dev/null -w '%{http_code}\n' --resolve site.example.com:8443:127.0.0
 
 **Второй вход через Proton: какой сервер Proton.** Вход 8445 выходит в интернет через интерфейс
 `PROXY_IFACE` (`warp-vpn` у AntiZapret или отдельный `proton` на сервере без AntiZapret), поэтому сервер Proton
-выбирается не в Xray, а на этом интерфейсе. Его держит автоподбор
-[`proton-pick`](https://github.com/shax0491/AntiZapret-VPN_new#-настройка) из форка AntiZapret (пункт 8б README):
-сервер в стране VPS, рабочий, не «российский» для YouTube (Google считает часть адресов Proton российскими —
-тогда через «VLESS Proton» YouTube показывает регион RU), с лучшим пингом и загрузкой; упавший туннель
-чинится в течение 5 минут.
-Переключение идёт «на лету» (`wg set`), соединения клиентов VLESS не рвутся; ключ Proton подходит к любому
-серверу Proton. На сервере без AntiZapret скрипт ставится отдельно:
+задаётся не в Xray, а WireGuard-профилем этого интерфейса. Берите сервер в стране VPS и проверьте, что Google
+не считает его выход российским (`curl -s --interface warp-vpn -A Mozilla/5.0 https://www.youtube.com/ | grep -o '"GL":"[A-Z]*"'`
+не должен показывать `RU`). Ключ надёжно работает на том сервере, под который выпущен профиль; у аккаунта Proton
+лимит одновременных подключений — каждый сервер с Proton-выходом его расходует.
+Сторож [`proton-pick`](https://github.com/shax0491/AntiZapret-VPN_new) из форка AntiZapret (README, пункт 8б)
+раз в 5 минут проверяет туннель и при поломке переподключает его, раз в 6 часов проверяет страну для YouTube.
+На сервере без AntiZapret:
 ```bash
 curl -fsSL -o /usr/local/sbin/proton-pick.py https://raw.githubusercontent.com/shax0491/AntiZapret-VPN_new/main/setup/root/antizapret/proton-pick.py
-python3 /usr/local/sbin/proton-pick.py --dry-run --force   # покажет, что выбрал бы
-python3 /usr/local/sbin/proton-pick.py --install           # таймер раз в 30 минут
+python3 /usr/local/sbin/proton-pick.py --force     # проверка сейчас
+python3 /usr/local/sbin/proton-pick.py --install   # таймер раз в 5 минут
 ```
-Интерфейс должен называться `proton` (`/etc/wireguard/proton.conf`), список серверов — см. там же, «Откуда список серверов».
+Интерфейс должен называться `proton` (`/etc/wireguard/proton.conf`).
 
 **AntiZapret на том же сервере.** Его защита от сканирования (`SCAN_PROTECTION`) банит источник, который за час
 открывает больше 20 новых пар «IP-порт». Обычные клиенты Reality (одни и те же порты) под это не попадают;
