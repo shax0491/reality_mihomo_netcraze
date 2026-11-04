@@ -6,7 +6,11 @@
 [ "$type" = "ip6tables" ] && exit 0
 IPT=/opt/sbin/iptables; PORT=7892
 MACS=$(sh /opt/etc/mihomo/macs.sh)
-pidof mihomo >/dev/null || MACS=""
+# WG-сервер Кинетика (удалённые клиенты): их трафик тоже через mihomo - заблокированное через VPN, остальное из дома напрямую.
+# Интерфейсы - в /opt/etc/mihomo/wg-ifaces (по одному, пустой файл = выключено). Домашняя сеть 192.168.1.0/24 видна им ещё и как
+# 192.168.201.0/24 (NETMAP): в конфиге клиента 192.168.1.0/24 не нужен и не ломает локальную сеть 192.168.1.x там, где он сидит.
+WGIF=$(grep -oE '^[a-z0-9]+' /opt/etc/mihomo/wg-ifaces 2>/dev/null)
+pidof mihomo >/dev/null || { MACS=""; WGIF=""; }
 # QUIC (UDP 443) этих устройств. Режим в /opt/etc/mihomo/quic-mode: router (по умолчанию) - напрямую через zapret
 # роутера, первые 8 пакетов в nfqws (очередь 301); proxmox - в туннель до zapret-gw (метка 0x10000000 -> таблица 112).
 # router: правило в mangle POSTROUTING, как в nfqws-keenetic. В FORWARD второй пакет QUIC Initial (Chrome/YouTube делят
@@ -24,13 +28,6 @@ if [ -z "$table" ] || [ "$table" = "mangle" ]; then
 		$IPT -w -t mangle -I PREROUTING -j MIHOMO_QUICRT
 		/opt/sbin/ip rule add fwmark 0x10000000/0x10000000 lookup 112 priority 5
 		/opt/sbin/ip route replace default dev nwg13 table 112
-	elif [ -n "$MACS" ]; then
-		lsmod | grep -q "^xt_connbytes " || insmod /lib/modules/$(uname -r)/xt_connbytes.ko 2>/dev/null
-		$IPT -w -t mangle -N MIHOMO_QUIC
-		for ip in $(for m in $MACS; do awk -v m=$m '$4==m && $3=="0x2" {print $1}' /proc/net/arp; done | sort -u); do
-			$IPT -w -t mangle -A MIHOMO_QUIC -s $ip -o eth4 -p udp --dport 443 -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:8 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num 301 --queue-bypass
-		done
-		$IPT -w -t mangle -A POSTROUTING -j MIHOMO_QUIC
 	fi
 fi
 if [ -z "$table" ] || [ "$table" = "filter" ]; then
@@ -47,10 +44,24 @@ if [ -z "$table" ] || [ "$table" = "filter" ]; then
 		$IPT -w -t filter -I FORWARD -j MIHOMO_QREJ
 	fi
 fi
+if [ -z "$table" ] || [ "$table" = "filter" ]; then
+	$IPT -w -t filter -D FORWARD -j MIHOMO_WGQ 2>/dev/null; $IPT -w -t filter -F MIHOMO_WGQ 2>/dev/null; $IPT -w -t filter -X MIHOMO_WGQ 2>/dev/null
+	if [ -n "$WGIF" ]; then
+		$IPT -w -t filter -N MIHOMO_WGQ
+		for i in $WGIF; do $IPT -w -t filter -A MIHOMO_WGQ -i $i -p udp --dport 443 ! -d 192.168.0.0/16 -j REJECT --reject-with icmp-port-unreachable; done
+		$IPT -w -t filter -I FORWARD -j MIHOMO_WGQ
+	fi
+fi
 [ -n "$table" ] && [ "$table" != "nat" ] && exit 0
 $IPT -w -t nat -D PREROUTING -j MIHOMO 2>/dev/null
 $IPT -w -t nat -F MIHOMO 2>/dev/null || $IPT -w -t nat -N MIHOMO
-[ -z "$MACS" ] && exit 0
+[ -z "$MACS" ] && [ -z "$WGIF" ] && exit 0
+[ -n "$WGIF" ] && { lsmod | grep -q "^xt_NETMAP " || insmod /lib/modules/$(uname -r)/xt_NETMAP.ko 2>/dev/null; }
+for i in $WGIF; do
+	$IPT -w -t nat -A MIHOMO -i $i -d 192.168.201.0/24 -j NETMAP --to 192.168.1.0/24
+	$IPT -w -t nat -A MIHOMO -i $i -p udp --dport 53 -j REDIRECT --to-ports 7874
+	$IPT -w -t nat -A MIHOMO -i $i -p tcp --dport 53 -j REDIRECT --to-ports 7874
+done
 for m in $MACS; do
 	$IPT -w -t nat -A MIHOMO -m mac --mac-source $m -p udp --dport 53 -j REDIRECT --to-ports 7874
 	$IPT -w -t nat -A MIHOMO -m mac --mac-source $m -p tcp --dport 53 -j REDIRECT --to-ports 7874
@@ -59,4 +70,5 @@ for net in 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12 192.168
 	$IPT -w -t nat -A MIHOMO -d $net -j RETURN
 done
 for m in $MACS; do $IPT -w -t nat -A MIHOMO -m mac --mac-source $m -p tcp -j REDIRECT --to-ports $PORT; done
+for i in $WGIF; do $IPT -w -t nat -A MIHOMO -i $i -p tcp -j REDIRECT --to-ports $PORT; done
 $IPT -w -t nat -I PREROUTING -j MIHOMO

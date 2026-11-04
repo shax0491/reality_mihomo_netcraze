@@ -2,14 +2,14 @@
 
 Как поднять на своих зарубежных серверах **VLESS + Reality** с сайтом-заглушкой и пустить через них
 домашнюю сеть с помощью **mihomo** (Clash Meta) на роутере **Netcraze / Keenetic**: свои карточки
-сервисов, автовыбор самого быстрого сервера, YouTube через zapret, выбор устройств политикой роутера.
+сервисов, автовыбор самого быстрого сервера, YouTube через «Авто», выбор устройств политикой роутера.
 
 ```
 устройство в политике «Mihomo» ─► Keenetic: DNS :53 → mihomo :7874, TCP → mihomo :7892
                                      │
                      mihomo: правила / карточки / «Авто»
                      ├─ российское и «остальное» ─► напрямую через провайдера
-                     ├─ YouTube ─► напрямую + zapret (nfqws) на роутере
+                     ├─ YouTube ─► через «Авто» (VLESS-Reality)
                      └─ заблокированное, ИИ, Telegram… ─► VLESS-Reality ─► ваш сервер ─► (прямой IP | Proton)
 устройства вне политики ─► обычный интернет провайдера (mihomo их не трогает)
 ```
@@ -43,7 +43,7 @@ curl -fsSL https://raw.githubusercontent.com/shax0491/reality_mihomo_netcraze/ma
 mihomo, остальные — как раньше, через провайдера.
 
 Готово. Панель: `http://192.168.1.1:9090/ui` — там видно, какие сайты куда идут, и можно переключать серверы.
-Всё ниже — подробности и ручная настройка (свой домен-заглушка, zapret для YouTube, списки, проверки).
+Всё ниже — подробности и ручная настройка (свой домен-заглушка, списки, проверки).
 
 ---
 
@@ -188,7 +188,6 @@ mkdir -p /opt/etc/mihomo/providers /opt/etc/ndm/netfilter.d
 | `sync-devices.sh` | `/opt/etc/mihomo/sync-devices.sh` | раз в минуту переставляет правила, если поменялись устройства или Кинетик пересобрал iptables |
 | `deploy.sh` | `/opt/etc/mihomo/deploy.sh` | безопасное применение конфига: тест → замена → перезапуск → откат при сбое |
 | `quic-allow.txt` | `/opt/etc/mihomo/quic-allow.txt` | сети, куда QUIC идёт напрямую (видеосерверы YouTube) |
-| `91-nfqws.sh`, `S98nfqws` | `/opt/etc/ndm/netfilter.d/`, `/opt/etc/init.d/` | zapret (nfqws) для YouTube — по желанию |
 | `crontab.example` | дописать строки в `/opt/etc/crontab` | `sync-devices.sh` раз в минуту |
 
 ```sh
@@ -276,8 +275,7 @@ mihomo convert-ruleset domain text full.txt az-full.mrs
   ходят по **QUIC (UDP 443)** — такой трафик ушёл бы напрямую с российского IP. Поэтому `90-mihomo.sh`
   **отклоняет QUIC** устройств политики ко всему, кроме видеосерверов YouTube (`quic-allow.txt`):
   приложение сразу переходит на TCP, а TCP идёт через mihomo.
-- QUIC к YouTube идёт напрямую через zapret. Правило nfqws стоит в **mangle POSTROUTING**, а не FORWARD:
-  иначе второй пакет QUIC Initial уходит мимо очереди через аппаратное ускорение (FASTNAT) Кинетика.
+- QUIC устройств политики отклоняется целиком (`quic-allow.txt` пуст): YouTube и остальное идёт по TCP через mihomo. DPI-обход (zapret/nfqws) в схеме не используется.
 
 ---
 
@@ -308,3 +306,14 @@ cp /opt/etc/mihomo/config.yaml /tmp/mihomo-new.yaml && vi /tmp/mihomo-new.yaml &
 | После перезагрузки нет перехвата | проверить cron (`/opt/etc/init.d/S10cron start`) и `sync-devices.sh` вручную |
 | В имени группы запятая — конфиг не применяется | в именах групп mihomo нельзя запятые |
 | Панель показывает MetaCubeXD вместо zashboard | задать `external-ui-url` (есть в примере) |
+
+---
+
+## 11. Конвейер конфигов, Mini App и сторож (server/, router/)
+
+- `router/config.example.yaml` — шаблон конфига mihomo; `server/mh-app/build_configs.py` собирает из него конфиги дома и работы (реестр серверов `nodes.json`, проверка `mihomo -t`) и публикует их по секретному пути.
+- `router/config-sync.sh` (cron, раз в 30 минут) скачивает конфиг, применяет через API и откатывает, если mihomo его не принял. Токен пути — метка `__LISTS_TOKEN__`.
+- `router/watch.sh` — сторож роутера, `router/rtctl` — команды для Mini App (дом); `router/work/` — то же для рабочего роутера (`wtctl`, агент `mh-agent.sh`).
+- `server/mh-app/` — Telegram Mini App (`server.py`, `index.html`) и сторож узлов `router_watch.py`; `snapshot.sh` снимает шаблон с сервера без секретов.
+- `server/proton/` — выбор и замена серверов Proton, `server/ipv6/` — IPv6 на узлах.
+- Секреты и реальные домены в репозиторий не кладём: `__CONTROLLER_SECRET__`, `__SUB_TOKEN__`, `__LISTS_TOKEN__`, `example.com`.
