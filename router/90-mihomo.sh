@@ -30,6 +30,15 @@ if [ "$type" = "ip6tables" ]; then
 			$IP6 -w -t nat -I PREROUTING -p udp --dport 53 -j MIHOMO6; $IP6 -w -t nat -I PREROUTING -p tcp -j MIHOMO6
 		fi
 	fi
+	# MSS-зажим для TCP, терминируемого mihomo локально (REDIRECT -> INPUT, мимо FORWARD): 1220 = MTU 1280 туннеля - 60
+	if [ -z "$table" ] || [ "$table" = "mangle" ]; then
+		for i in 1 2 3; do
+			$IP6 -w -t mangle -D PREROUTING -i br0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1220 2>/dev/null
+			$IP6 -w -t mangle -D POSTROUTING -o br0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1220 2>/dev/null
+		done
+		$IP6 -w -t mangle -I PREROUTING -i br0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1220
+		$IP6 -w -t mangle -I POSTROUTING -o br0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1220
+	fi
 	exit 0
 fi
 IPT=/opt/sbin/iptables; PORT=7892
