@@ -142,6 +142,12 @@ def build(tpl, nodes, work):
                          % (n["key"], n["flag"], n["key"]) for n in nodes)
         text = text.replace("\nproxy-groups:\n", "\nproxy-groups:\n" + groups, 1)
     text = re.sub(r"^# Собран на DE3.*\n", "", text)
+    # IPv6: /opt/mh-app/ipv6.flag - дом, /opt/mh-app/ipv6-work.flag - работа ("1" = Dual-Stack, иначе только IPv4)
+    try:
+        v6 = open(BASE + ("/ipv6-work.flag" if work else "/ipv6.flag")).read().strip() == "1"
+    except OSError:
+        v6 = False
+    text = re.sub(r"^(\s*ipv6: )(true|false)$", lambda m: m.group(1) + ("true" if v6 else "false"), text, flags=re.M)
     return HEAD + text
 
 

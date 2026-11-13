@@ -15,8 +15,10 @@ OK=1
 		/opt/sbin/iptables -t filter -C FORWARD -j MIHOMO_QREJ 2>/dev/null || OK=0
 	fi
 	/opt/sbin/iptables -t mangle -C POSTROUTING -j NFQWS 2>/dev/null || OK=0
+	/opt/sbin/ip6tables -t nat -C PREROUTING -p tcp -j MIHOMO6 2>/dev/null || OK=0
 }
 [ "$OK" = 1 ] && [ "$NOW" = "$(cat /tmp/mihomo-devices 2>/dev/null)" ] && exit 0
 sh /opt/etc/ndm/netfilter.d/91-nfqws.sh
+type=ip6tables sh /opt/etc/ndm/netfilter.d/90-mihomo.sh
 sh /opt/etc/ndm/netfilter.d/90-mihomo.sh && echo "$NOW" > /tmp/mihomo-devices
 logger -t mihomo "rules re-applied: $NOW ok=$OK"

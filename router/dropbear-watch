@@ -1,0 +1,2 @@
+#!/bin/sh
+netstat -ltn 2>/dev/null | grep -q ":222 " || { rm -f /opt/var/run/dropbear.pid; /opt/etc/init.d/S51dropbear start; }

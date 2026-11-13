@@ -3,7 +3,35 @@
 # их DNS -> mihomo :7874, TCP -> redir-port 7892 (nat REDIRECT), QUIC (UDP 443): к YouTube - zapret роутера, остальное отклоняется (-> TCP).
 # Устройства определяются по MAC. Кинетик вызывает этот хук при пересборке iptables; sync-devices.sh (cron, раз в
 # минуту) вызывает его, когда меняется состав политики. TPROXY на этой прошивке не используем.
-[ "$type" = "ip6tables" ] && exit 0
+if [ "$type" = "ip6tables" ]; then
+	# IPv6 для устройств политики: QUIC отклоняется (-> TCP), DNS -> mihomo :7874, TCP -> redir-port (REDIRECT работает и в ip6tables)
+	IP6=/opt/sbin/ip6tables; PORT6=7892
+	MACS6=$(sh /opt/etc/mihomo/macs-all.sh)
+	pidof mihomo >/dev/null || MACS6=""
+	if [ -z "$table" ] || [ "$table" = "filter" ]; then
+		$IP6 -w -t filter -D FORWARD -j MIHOMO6_QREJ 2>/dev/null; $IP6 -w -t filter -D FORWARD -p udp --dport 443 -j MIHOMO6_QREJ 2>/dev/null; $IP6 -w -t filter -F MIHOMO6_QREJ 2>/dev/null; $IP6 -w -t filter -X MIHOMO6_QREJ 2>/dev/null
+		if [ -n "$MACS6" ]; then
+			$IP6 -w -t filter -N MIHOMO6_QREJ
+			for net in fc00::/7 fe80::/10 ff00::/8; do $IP6 -w -t filter -A MIHOMO6_QREJ -p udp -d $net -j RETURN; done
+			for m in $MACS6; do $IP6 -w -t filter -A MIHOMO6_QREJ -m mac --mac-source $m -p udp --dport 443 -j REJECT --reject-with icmp6-port-unreachable; done
+			$IP6 -w -t filter -I FORWARD -p udp --dport 443 -j MIHOMO6_QREJ
+		fi
+	fi
+	if [ -z "$table" ] || [ "$table" = "nat" ]; then
+		$IP6 -w -t nat -D PREROUTING -j MIHOMO6 2>/dev/null; $IP6 -w -t nat -D PREROUTING -p tcp -j MIHOMO6 2>/dev/null; $IP6 -w -t nat -D PREROUTING -p udp --dport 53 -j MIHOMO6 2>/dev/null
+		$IP6 -w -t nat -F MIHOMO6 2>/dev/null || $IP6 -w -t nat -N MIHOMO6
+		if [ -n "$MACS6" ]; then
+			for m in $MACS6; do
+				$IP6 -w -t nat -A MIHOMO6 -m mac --mac-source $m -p udp --dport 53 -j REDIRECT --to-ports 7874
+				$IP6 -w -t nat -A MIHOMO6 -m mac --mac-source $m -p tcp --dport 53 -j REDIRECT --to-ports 7874
+			done
+			for net in ::1/128 fe80::/10 fc00::/7 ff00::/8; do $IP6 -w -t nat -A MIHOMO6 -d $net -j RETURN; done
+			for m in $MACS6; do $IP6 -w -t nat -A MIHOMO6 -m mac --mac-source $m -p tcp -j REDIRECT --to-ports $PORT6; done
+			$IP6 -w -t nat -I PREROUTING -p udp --dport 53 -j MIHOMO6; $IP6 -w -t nat -I PREROUTING -p tcp -j MIHOMO6
+		fi
+	fi
+	exit 0
+fi
 IPT=/opt/sbin/iptables; PORT=7892
 MACS=$(sh /opt/etc/mihomo/macs.sh)
 # WG-сервер Кинетика (удалённые клиенты): их трафик тоже через mihomo - заблокированное через VPN, остальное из дома напрямую.
