@@ -16,3 +16,16 @@
 ## Снимок шаблона без секретов
 
 `./snapshot.sh` снимает `/opt/mh-app/templates/home.yaml` с DE3 и подставляет метки `__CONTROLLER_SECRET__`, `__SUB_TOKEN__`, `__LISTS_TOKEN__`. Так делать всегда: 03.11.2026 прямой `scp` занёс реальные значения в публичный репозиторий (история переписана, токены перевыпущены).
+
+## Карточка «🌐 Режим IPv6 / IPv4»
+
+Селектор наверху веб-интерфейса Mihomo, правило `AND,((IP-CIDR6,::/0,no-resolve),(NOT,((GEOIP,ru,no-resolve)))),🌐 Режим IPv6 / IPv4`
+стоит после правил локальных сетей и действует только на IPv6-адреса вне РФ:
+
+- `🔄 Авто Dual-Stack` - `PASS`: правила идут как обычно, `-4` выходит по IPv4 узла, `-6` по IPv6 (работает при `sniffer.override-destination: false`
+  и `dns.enhanced-mode: normal`, на узле `sniffing.routeOnly: true`);
+- `⚡ Приоритет IPv6 (Proton)` - весь внешний IPv6 в «Авто — самый быстрый»;
+- `🚀 Приоритет IPv6 (Прямой VPS)` - весь внешний IPv6 в «Авто — без Proton»;
+- `🛡️ Только IPv4` - внешний IPv6 отклоняется (`REJECT`), приложения переходят на IPv4.
+
+Meta и Anthropic по IPv6 на узле сбрасываются (`xray-az-ipv4-domains.sh`), клиент сразу уходит на IPv4.
