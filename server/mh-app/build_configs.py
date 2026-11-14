@@ -153,12 +153,10 @@ def build(tpl, nodes, work):
     if not work:
         # заблокированное идёт через Proton, на котором 1.1.1.1:53 не отвечает, 8.8.8.8:53 отвечает
         text = text.replace('"1.1.1.1#', '"8.8.8.8#')
-        # MTProxy-домены без AAAA для домашних устройств (v6 из дома до части узлов нестабилен); static (LV1) оставляем с AAAA
+        # MTProxy-домены без AAAA для домашних устройств (v6 из дома до части узлов нестабилен)
         import socket
         hl = []
         for sub, key in MTPROXY_HOST.items():
-            if sub == "static":
-                continue
             nd = next((n for n in nodes if n["key"] == key), None)
             if nd:
                 try:
