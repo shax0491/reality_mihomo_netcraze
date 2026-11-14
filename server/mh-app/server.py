@@ -645,12 +645,6 @@ class H(BaseHTTPRequestHandler):
                 name = "автовыбор"
             else:
                 mihomo("/proxies/" + urllib.parse.quote(group), "PUT", {"name": name})
-            if group == "🌐 Режим IPv6 / IPv4":   # IPV6MODE: v4-часть режима (скрытая группа) - сразу, не ждать cron роутера
-                try:
-                    mihomo("/proxies/" + urllib.parse.quote("🌐 v4-политика (синхронно с режимом)"), "PUT",
-                           {"name": "REJECT" if "Только IPv6" in name else "PASS"})
-                except Exception:
-                    pass
             with _lock:
                 h = load_hist()
                 h.append({"t": int(time.time()), "group": group, "from": old, "to": name, "manual": True})

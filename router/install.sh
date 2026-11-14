@@ -39,7 +39,7 @@ get() { curl -fsSL -o "$2" "$REPO/$1"; }
 get config.simple.yaml $M/config.yaml
 get S99mihomo /opt/etc/init.d/S99mihomo
 get 90-mihomo.sh /opt/etc/ndm/netfilter.d/90-mihomo.sh
-for f in macs.sh macs-all.sh sync-devices.sh ipmode-sync.sh deploy.sh quic-allow.txt; do get $f $M/$f; done
+for f in macs.sh macs-all.sh sync-devices.sh deploy.sh quic-allow.txt; do get $f $M/$f; done
 get dropbear-watch /opt/etc/cron.5mins/dropbear-watch
 chmod +x /opt/etc/cron.5mins/dropbear-watch /opt/etc/init.d/S99mihomo /opt/etc/ndm/netfilter.d/90-mihomo.sh $M/*.sh
 for f in my-block my-block-ips my-direct my-direct-ips my-vpn my-vpn-ips; do [ -f $M/providers/$f.txt ] || : > $M/providers/$f.txt; done
@@ -62,7 +62,6 @@ say "Проверка конфига"
 
 say "Автозапуск"
 grep -q sync-devices.sh /opt/etc/crontab 2>/dev/null || echo '*/1 * * * * root /opt/etc/mihomo/sync-devices.sh' >> /opt/etc/crontab
-grep -q ipmode-sync.sh /opt/etc/crontab 2>/dev/null || echo '*/1 * * * * root /opt/etc/mihomo/ipmode-sync.sh' >> /opt/etc/crontab
 /opt/etc/init.d/S10cron restart >/dev/null 2>&1 || true
 /opt/etc/init.d/S99mihomo restart
 sleep 5

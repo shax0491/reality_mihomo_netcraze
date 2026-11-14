@@ -11,4 +11,3 @@ HOME=/
 42 4 1 * * root /opt/bin/run-parts /opt/etc/cron.monthly	
 
 */1 * * * * root /opt/etc/mihomo/sync-devices.sh
-*/1 * * * * root /opt/etc/mihomo/ipmode-sync.sh

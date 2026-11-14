@@ -75,11 +75,10 @@ proxy-providers:
 proxies:
   - {"name": "Напрямую (провайдер)", "type": "direct", "ip-version": "ipv4-prefer"}
 proxy-groups:
-  - {"name": "🌐 Режим IPv6 / IPv4", "type": "select", "proxies": ["🔄 Авто Dual-Stack (IPv4 + IPv6)", "⚡ Только IPv6 (приоритет IPv6)", "🛡️ Только IPv4 (выкл IPv6 — прямой/протон v4)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
+  - {"name": "🌐 Режим IPv6 / IPv4", "type": "select", "proxies": ["🔄 Авто Dual-Stack (IPv4 + IPv6)", "⚡ Приоритет IPv6 (IPv4 только для сайтов без IPv6)", "🛡️ Только IPv4 (выкл IPv6 — прямой/протон v4)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
   - {"name": "🔄 Авто Dual-Stack (IPv4 + IPv6)", "type": "select", "proxies": ["PASS"], "hidden": true}
-  - {"name": "⚡ Только IPv6 (приоритет IPv6)", "type": "select", "proxies": ["PASS"], "hidden": true}
+  - {"name": "⚡ Приоритет IPv6 (IPv4 только для сайтов без IPv6)", "type": "select", "proxies": ["PASS"], "hidden": true}
   - {"name": "🛡️ Только IPv4 (выкл IPv6 — прямой/протон v4)", "type": "select", "proxies": ["REJECT"], "hidden": true}
-  - {"name": "🌐 v4-политика (синхронно с режимом)", "type": "select", "proxies": ["PASS", "REJECT"], "hidden": true}
   - {"name": "Все серверы — проверка", "type": "select", "proxies": ["Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Speedtest.png", "use": ["az-vless"]}
   - {"name": "Авто — самый быстрый", "type": "url-test", "use": ["az-vless"], "filter": "Proton", "url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 10, "lazy": false, "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png", "max-failed-times": 2}
   - {"name": "Авто — без Proton", "type": "url-test", "use": ["az-vless"], "filter": "прямой", "url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 10, "lazy": false, "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
@@ -245,6 +244,8 @@ rule-providers:
     path: ./ruleset/ru-apps.yaml
     interval: 86400
 rules:
+  # IPV6MODE: режим стека. IPv6 вне РФ -> карточка (Только IPv4 = REJECT, клиент мгновенно берёт IPv4). IPv4 никогда не режем: сайты без AAAA открываются штатно
+  - AND,((IP-CIDR6,::/0,no-resolve),(NOT,((GEOIP,ru,no-resolve))),(NOT,((GEOIP,private,no-resolve)))),🌐 Режим IPv6 / IPv4 # IPV6MODE
   # alphavps.com: Cloudflare 1020 блокирует Proton/WARP - ведём через «Исключения» (чистый прямой выход DE, не домашний провайдер) (03.11)
   - DOMAIN-SUFFIX,alphavps.com,Исключения (без Proton)
   # медиа-стек Лампы/Filmix/трекеры (03.11): мимо Proton (его IPv6-выход режут CDN), чистый прямой выход DE
@@ -353,9 +354,6 @@ rules:
   - RULE-SET,my-block-ips,REJECT
   - RULE-SET,my-direct,Напрямую (провайдер)
   - RULE-SET,my-direct-ips,Напрямую (провайдер)
-  # IPV6MODE: режим стека. v6 вне РФ -> карточка (Только IPv4 = REJECT, клиент мгновенно берёт IPv4); v4 вне РФ -> скрытая группа, её роутер синхронизирует с карточкой (Только IPv6 = REJECT)
-  - AND,((IP-CIDR6,::/0,no-resolve),(NOT,((GEOIP,ru,no-resolve))),(NOT,((GEOIP,private,no-resolve)))),🌐 Режим IPv6 / IPv4 # IPV6MODE
-  - AND,((NOT,((IP-CIDR6,::/0,no-resolve))),(NOT,((GEOIP,ru,no-resolve))),(NOT,((GEOIP,private,no-resolve)))),🌐 v4-политика (синхронно с режимом) # IPV6MODE
   # ECH Cloudflare (внешнее имя cloudflare-ech.com, сайт внутри зашифрован): не через Proton - Cloudflare блокирует его адреса (portal.qde.com 25.10)
   - DOMAIN,cloudflare-ech.com,DE прямой (для сайтов с Cloudflare)
   - RULE-SET,my-noproton,DE прямой (для сайтов с Cloudflare)
