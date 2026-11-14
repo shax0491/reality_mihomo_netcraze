@@ -9,6 +9,8 @@ if [ "$type" = "ip6tables" ]; then
 	MACS6=$(sh /opt/etc/mihomo/macs-all.sh)
 	pidof mihomo >/dev/null || MACS6=""
 	if [ -z "$table" ] || [ "$table" = "filter" ]; then
+		# mail.ru (2a00:1148::/32): прямой v6 из Ростелекома не доходит - настоящий TCP RST до Mihomo, клиент сразу берёт IPv4
+		for dn in $(grep -E "^[0-9a-f:]+/[0-9]+$" /opt/etc/mihomo/ru-v6-dead.txt 2>/dev/null); do $IP6 -w -t filter -D FORWARD -p tcp -d $dn -j REJECT --reject-with tcp-reset 2>/dev/null; $IP6 -w -t filter -I FORWARD -p tcp -d $dn -j REJECT --reject-with tcp-reset; done
 		$IP6 -w -t filter -D FORWARD -j MIHOMO6_QREJ 2>/dev/null; $IP6 -w -t filter -D FORWARD -p udp --dport 443 -j MIHOMO6_QREJ 2>/dev/null; $IP6 -w -t filter -F MIHOMO6_QREJ 2>/dev/null; $IP6 -w -t filter -X MIHOMO6_QREJ 2>/dev/null
 		if [ -n "$MACS6" ]; then
 			$IP6 -w -t filter -N MIHOMO6_QREJ
@@ -25,7 +27,7 @@ if [ "$type" = "ip6tables" ]; then
 				$IP6 -w -t nat -A MIHOMO6 -m mac --mac-source $m -p udp --dport 53 -j REDIRECT --to-ports 7874
 				$IP6 -w -t nat -A MIHOMO6 -m mac --mac-source $m -p tcp --dport 53 -j REDIRECT --to-ports 7874
 			done
-			for net in ::1/128 fe80::/10 fc00::/7 ff00::/8; do $IP6 -w -t nat -A MIHOMO6 -d $net -j RETURN; done
+			LANP6=$(ip -6 route show dev br0 | grep -E "^2[0-9a-f:]+/64 " | cut -d" " -f1); for net in ::1/128 fe80::/10 fc00::/7 ff00::/8 $LANP6 $(grep -E "^[0-9a-f:]+/[0-9]+$" /opt/etc/mihomo/ru-v6-dead.txt 2>/dev/null) $(grep ":" /opt/etc/mihomo/mtp-bypass.txt 2>/dev/null | grep -v "^#"); do $IP6 -w -t nat -A MIHOMO6 -d $net -j RETURN; done
 			for m in $MACS6; do $IP6 -w -t nat -A MIHOMO6 -m mac --mac-source $m -p tcp -j REDIRECT --to-ports $PORT6; done
 			$IP6 -w -t nat -I PREROUTING -p udp --dport 53 -j MIHOMO6; $IP6 -w -t nat -I PREROUTING -p tcp -j MIHOMO6
 		fi
@@ -103,7 +105,7 @@ for m in $MACS; do
 	$IPT -w -t nat -A MIHOMO -m mac --mac-source $m -p udp --dport 53 -j REDIRECT --to-ports 7874
 	$IPT -w -t nat -A MIHOMO -m mac --mac-source $m -p tcp --dport 53 -j REDIRECT --to-ports 7874
 done
-for net in 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 255.255.255.255/32; do
+for net in $(grep -E "^[0-9.]+$" /opt/etc/mihomo/mtp-bypass.txt 2>/dev/null) 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 224.0.0.0/4 255.255.255.255/32; do
 	$IPT -w -t nat -A MIHOMO -d $net -j RETURN
 done
 for m in $MACS; do $IPT -w -t nat -A MIHOMO -m mac --mac-source $m -p tcp -j REDIRECT --to-ports $PORT; done

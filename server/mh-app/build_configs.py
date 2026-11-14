@@ -148,6 +148,28 @@ def build(tpl, nodes, work):
     except OSError:
         v6 = False
     text = re.sub(r"^(\s*ipv6: )(true|false)$", lambda m: m.group(1) + ("true" if v6 else "false"), text, flags=re.M)
+    # DNS Mihomo: на работе AAAA клиентам не отдаём (нет нативного IPv6), дома - по флагу
+    text = re.sub(r"(?ms)^(dns:\n.*?^  ipv6: )(true|false)$", lambda m: m.group(1) + ("false" if work else "true"), text, count=1)
+    if not work:
+        # заблокированное идёт через Proton, на котором 1.1.1.1:53 не отвечает, 8.8.8.8:53 отвечает
+        text = text.replace('"1.1.1.1#', '"8.8.8.8#')
+        # MTProxy-домены без AAAA для домашних устройств (v6 из дома до части узлов нестабилен); static (LV1) оставляем с AAAA
+        import socket
+        hl = []
+        for sub, key in MTPROXY_HOST.items():
+            if sub == "static":
+                continue
+            nd = next((n for n in nodes if n["key"] == key), None)
+            if nd:
+                try:
+                    ip = socket.getaddrinfo(nd["host"], None, socket.AF_INET)[0][4][0]
+                    hl.append('  "%s.example.net": %s' % (sub, ip))
+                except OSError:
+                    pass
+        if hl and "\nhosts:" not in text:
+            text = text.replace("\ndns:\n", "\nhosts:\n" + "\n".join(hl) + "\ndns:\n", 1)
+    if work:  # ip-version только для дома
+        text = text.replace(', "ip-version": "ipv4-prefer"', "")
     return HEAD + text
 
 

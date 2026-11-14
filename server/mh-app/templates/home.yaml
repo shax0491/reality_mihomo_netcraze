@@ -73,7 +73,7 @@ proxy-providers:
     path: ./providers/az-vless.yaml
     health-check: {enable: true, url: "http://www.gstatic.com/generate_204", interval: 600}
 proxies:
-  - {"name": "Напрямую (провайдер)", "type": "direct"}
+  - {"name": "Напрямую (провайдер)", "type": "direct", "ip-version": "ipv4-prefer"}
 proxy-groups:
   - {"name": "🌐 Режим IPv6 / IPv4", "type": "select", "proxies": ["🔄 Авто Dual-Stack (IPv4->v4, IPv6->v6)", "⚡ Приоритет IPv6 (Proton)", "🚀 Приоритет IPv6 (Прямой VPS)", "🛡️ Только IPv4 (Выкл IPv6 в туннеле)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
   - {"name": "🔄 Авто Dual-Stack (IPv4->v4, IPv6->v6)", "type": "select", "proxies": ["PASS"], "hidden": true}
@@ -349,7 +349,6 @@ rules:
   - IP-CIDR,10.0.0.0/8,Напрямую (провайдер),no-resolve
   - IP-CIDR6,fc00::/7,Напрямую (провайдер),no-resolve
   - IP-CIDR6,fe80::/10,Напрямую (провайдер),no-resolve
-  - AND,((IP-CIDR6,::/0,no-resolve),(NOT,((GEOIP,ru,no-resolve)))),🌐 Режим IPv6 / IPv4
   - RULE-SET,my-block,REJECT
   - RULE-SET,my-block-ips,REJECT
   - RULE-SET,my-direct,Напрямую (провайдер)
@@ -574,4 +573,6 @@ rules:
   - GEOSITE,ru-available-only-inside,Напрямую (провайдер)
   - GEOIP,ru,Напрямую (провайдер),no-resolve
   # голые IPv6-адреса (без имени) - в туннель, а не в WAN провайдера; имена с AAAA сюда не попадают (no-resolve)
+  # IPv6 вне РФ по режиму карточки: ПОСЛЕ всех DIRECT-правил для РФ (иначе ozon/vk/банки по v6 уходят в Proton)
+  - AND,((IP-CIDR6,::/0,no-resolve),(NOT,((GEOIP,ru,no-resolve)))),🌐 Режим IPv6 / IPv4
   - MATCH,Остальной интернет
