@@ -112,13 +112,19 @@ NODES_FILE = os.path.join(BASE, "nodes.json")
 SUB_TOKEN_FILE = os.path.join(BASE, "sub.token")
 
 
-def build_sub():
+IPMODE_FILE = os.path.join(BASE, 'ipmode.state')
+CARD_MODE = '🌐 Режим IPv6 / IPv4'
+
+
+def build_sub(prio=False):
     nodes = json.load(open(NODES_FILE, encoding="utf-8"))["nodes"]
     lines = ["proxies:"]
     for n in nodes:
         for mode, port in (("Proton", n.get("port_proton", 8445)), ("прямой", n.get("port_direct", 8443))):
             if not port:  # узел без Proton (port_proton = 0) - только прямой вариант
                 continue
+            if prio:  # режим «Приоритет IPv6»: тот же узел и вариант, но вход с routeOnly=false - IPv4-запрос Dual-Stack сайта выходит по IPv6
+                port = n.get("port_proton_v6" if mode == "Proton" else "port_direct_v6") or port
             lines.append('  - {name: "%s %s | VLESS %s", type: vless, server: %s, port: %d, uuid: "%s", flow: xtls-rprx-vision, network: tcp, udp: true, tls: true, '
                          'servername: %s, client-fingerprint: chrome, reality-opts: {public-key: "%s", short-id: "%s"}}'
                          % (n["flag"], n["key"], mode, n["host"], port, n["uuid"], n["sni"], n["pub"], n["sid"]))
@@ -448,7 +454,8 @@ class H(BaseHTTPRequestHandler):
             if not (ip.startswith("192.168.") or ip.startswith("127.")) or "X-Forwarded-For" in self.headers or not real                     or not hmac.compare_digest(path[5:].encode(), real.encode()):
                 return self._send(404, {"error": "not found"})
             try:
-                self._send(200, build_sub(), "text/yaml; charset=utf-8")
+                prio = "follow=1" in self.path.partition("?")[2] and open(IPMODE_FILE, encoding="utf-8").read().strip() == "prio" if os.path.exists(IPMODE_FILE) else False
+                self._send(200, build_sub(prio), "text/yaml; charset=utf-8")
             except Exception as e:
                 self._send(500, {"error": "sub: %s" % type(e).__name__})
         elif path == "/api/rt/lists":
@@ -680,7 +687,24 @@ class H(BaseHTTPRequestHandler):
         self._send(404, {"error": "not found"})
 
 
+def mode_follow():
+    last = None
+    while True:
+        try:
+            now = mihomo("/proxies/" + urllib.parse.quote(CARD_MODE, safe=""), timeout=5).get("now", "")
+            cur = "prio" if now.startswith("⚡") else "other"
+            if cur != last:
+                if last is not None or (open(IPMODE_FILE, encoding="utf-8").read().strip() if os.path.exists(IPMODE_FILE) else "") != cur:
+                    open(IPMODE_FILE, "w", encoding="utf-8").write(cur)
+                    mihomo("/providers/proxies/az-vless", "PUT", timeout=30)
+                last = cur
+        except Exception:
+            pass
+        time.sleep(2)
+
+
 if __name__ == "__main__":
     if HOME_MIHOMO:
         threading.Thread(target=poller, daemon=True).start()
+        threading.Thread(target=mode_follow, daemon=True).start()
     ThreadingHTTPServer((CFG.get("bind", "127.0.0.1"), PORT), H).serve_forever()

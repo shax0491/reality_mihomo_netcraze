@@ -68,7 +68,7 @@ dns:
 proxy-providers:
   az-vless:
     type: http
-    url: "https://de3.example.com/sub/REDACTED"
+    url: "https://de3.example.com/sub/REDACTED?follow=1"
     interval: 3600
     path: ./providers/az-vless.yaml
     health-check: {enable: true, url: "http://www.gstatic.com/generate_204", interval: 600}
@@ -80,9 +80,9 @@ proxy-groups:
   - {"name": "⚡ Приоритет IPv6 (IPv4 только для сайтов без IPv6)", "type": "select", "proxies": ["PASS"], "hidden": true}
   - {"name": "🛡️ Только IPv4 (выкл IPv6 — прямой/протон v4)", "type": "select", "proxies": ["REJECT"], "hidden": true}
   - {"name": "Все серверы — проверка", "type": "select", "proxies": ["Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Speedtest.png", "use": ["az-vless"]}
-  - {"name": "Авто — самый быстрый", "type": "url-test", "use": ["az-vless"], "filter": "Proton", "url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 10, "lazy": false, "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png", "max-failed-times": 2}
-  - {"name": "Авто — без Proton", "type": "url-test", "use": ["az-vless"], "filter": "прямой", "url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 10, "lazy": false, "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
-  - {"name": "DE прямой (для сайтов с Cloudflare)", "type": "url-test", "use": ["az-vless"], "filter": "DE[0-9] [|] VLESS прямой", "url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 10, "lazy": false, "hidden": true}
+  - {"name": "Авто — самый быстрый", "type": "url-test", "use": ["az-vless"], "filter": "Proton", "url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 50, "lazy": false, "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png", "max-failed-times": 2}
+  - {"name": "Авто — без Proton", "type": "url-test", "use": ["az-vless"], "filter": "прямой", "url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 50, "lazy": false, "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
+  - {"name": "DE прямой (для сайтов с Cloudflare)", "type": "url-test", "use": ["az-vless"], "filter": "DE[0-9] [|] VLESS прямой", "url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 50, "lazy": false, "hidden": true}
   - {"name": "🇩🇪 DE2", "type": "select", "use": ["az-vless"], "filter": "DE2", "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
   - {"name": "🇩🇪 DE1", "type": "select", "use": ["az-vless"], "filter": "DE1", "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}
   - {"name": "🇩🇪 DE4", "type": "select", "use": ["az-vless"], "filter": "DE4", "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png"}

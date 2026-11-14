@@ -27,7 +27,7 @@ MTPROXY_HOST = {"cdn": "DE1", "animal": "NL2", "static": "LV1", "media": "FI1", 
 WORK_MTP_VIA = {"static": "FI1", "media": "LV1", "cdn": "FR1"}   # cdn (DE1) через FR1: NL2 с 27.10 заблокирован Fortinet с работы
 
 
-URL_TEST = {"url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 10, "lazy": False}
+URL_TEST = {"url": "http://www.gstatic.com/generate_204", "interval": 300, "tolerance": 50, "lazy": False}
 
 
 def build(tpl, nodes, work):
