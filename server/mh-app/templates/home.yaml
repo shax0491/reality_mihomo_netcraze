@@ -466,6 +466,9 @@ rules:
   - DOMAIN-SUFFIX,protonvpn.com,Платежи и шлюзы
   - DOMAIN-SUFFIX,proton.me,Платежи и шлюзы
   # реклама и трекеры (как ADBLOCK у AntiZapret); ваши списки «напрямую»/«VPN» выше - они важнее
+  # Mail.ru: баннеры/логотипы лежат на rs.mail.ru и r.mradx.net - адблок их резал (14.11), раньше адблока отдаём напрямую
+  - DOMAIN-SUFFIX,rs.mail.ru,Напрямую (провайдер)
+  - DOMAIN-SUFFIX,mradx.net,Напрямую (провайдер)
   - AND,((RULE-SET,az-adblock),(NOT,((RULE-SET,az-adblock-allow)))),REJECT
   - DOMAIN-SUFFIX,example.org,Напрямую (провайдер)
   - DOMAIN-SUFFIX,example.net,Напрямую (провайдер)
