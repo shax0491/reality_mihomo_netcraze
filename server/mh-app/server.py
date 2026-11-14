@@ -122,6 +122,10 @@ def build_sub():
             lines.append('  - {name: "%s %s | VLESS %s", type: vless, server: %s, port: %d, uuid: "%s", flow: xtls-rprx-vision, network: tcp, udp: true, tls: true, '
                          'servername: %s, client-fingerprint: chrome, reality-opts: {public-key: "%s", short-id: "%s"}}'
                          % (n["flag"], n["key"], mode, n["host"], port, n["uuid"], n["sni"], n["pub"], n["sid"]))
+        if n.get("port_direct_v6"):  # inbound с routeOnly=false: IPv4-запрос Dual-Stack сайта выходит по IPv6 (ручной выбор в карточке узла)
+            lines.append('  - {name: "%s %s | VLESS ⚡IPv6 D", type: vless, server: %s, port: %d, uuid: "%s", flow: xtls-rprx-vision, network: tcp, udp: true, tls: true, '
+                         'servername: %s, client-fingerprint: chrome, reality-opts: {public-key: "%s", short-id: "%s"}}'
+                         % (n["flag"], n["key"], n["host"], n["port_direct_v6"], n["uuid"], n["sni"], n["pub"], n["sid"]))
     return chr(10).join(lines) + chr(10)
 
 
