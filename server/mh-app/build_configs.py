@@ -166,6 +166,8 @@ def build(tpl, nodes, work):
                     pass
         if hl and "\nhosts:" not in text:
             text = text.replace("\ndns:\n", "\nhosts:\n" + "\n".join(hl) + "\ndns:\n", 1)
+    if work:  # на работе нет IPv6: правила режима стека (IPV6MODE) только для дома
+        text = "\n".join(l for l in text.split("\n") if "IPV6MODE" not in l)
     if work:  # ip-version только для дома
         text = text.replace(', "ip-version": "ipv4-prefer"', "")
     return HEAD + text
