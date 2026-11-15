@@ -106,7 +106,7 @@ def build(tpl, nodes, work):
                         new.append(p)
                 o["proxies"] = new
                 # дефолт Google/ИИ - DE4: на «Авто» уходит Proton/нативный IPv6 NL2 и стрим Gemini рвётся
-                if o["name"] in ("Google", "ИИ — ChatGPT и Claude") and "🇩🇪 DE4" in new:
+                if o["name"] in ("ИИ — ChatGPT и Claude",) and "🇩🇪 DE4" in new:
                     new.remove("🇩🇪 DE4"); new.insert(0, "🇩🇪 DE4"); o["proxies"] = new
             out.append("  - " + json.dumps(o, ensure_ascii=False)); continue
         # работа: Fortinet перехватывает прямые DNS-запросы (62.76.76.62, 77.88.8.8) и подсовывает страницу блокировки -
