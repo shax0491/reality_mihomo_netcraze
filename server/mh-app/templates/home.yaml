@@ -93,9 +93,9 @@ proxy-groups:
   - {"name": "Фикс. выход (стабильный IP)", "type": "fallback", "use": ["az-vless"], "filter": "(DE2|DE4|DE1|NL2) \\| VLESS прямой", "url": "http://www.gstatic.com/generate_204", "interval": 120, "lazy": false, "hidden": true, "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png"}
   - {"name": "YouTube", "type": "select", "proxies": ["Авто — самый быстрый", "Авто — без Proton", "🇩🇪 DE2", "🇩🇪 DE1", "🇩🇪 DE4", "🇳🇱 NL2", "🇱🇻 LV1", "Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/YouTube.png"}
   - {"name": "Telegram", "type": "select", "proxies": ["Авто — без Proton", "Авто — самый быстрый", "🇩🇪 DE2", "🇩🇪 DE1", "🇩🇪 DE4", "🇳🇱 NL2", "🇱🇻 LV1", "Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Telegram.png"}
-  - {"name": "ИИ — ChatGPT и Claude", "type": "select", "use": ["az-vless"], "filter": "DE1|DE4|FI1|FR1", "proxies": ["Авто — без Proton", "Авто — самый быстрый", "Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"}
+  - {"name": "ИИ — ChatGPT и Claude", "type": "select", "use": ["az-vless"], "filter": "DE1|DE4|FI1|FR1", "proxies": ["🇩🇪 DE4", "Авто — самый быстрый", "Авто — без Proton", "Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/ChatGPT.png"}
   - {"name": "Discord", "type": "select", "proxies": ["Авто — самый быстрый", "Авто — без Proton", "🇩🇪 DE2", "🇩🇪 DE1", "🇩🇪 DE4", "🇳🇱 NL2", "🇱🇻 LV1", "Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Discord.png"}
-  - {"name": "Google", "type": "select", "proxies": ["Авто — без Proton", "Авто — самый быстрый", "🇩🇪 DE2", "🇩🇪 DE1", "🇩🇪 DE4", "🇳🇱 NL2", "🇱🇻 LV1", "Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Google_Search.png"}
+  - {"name": "Google", "type": "select", "proxies": ["🇩🇪 DE4", "Авто — самый быстрый", "Авто — без Proton", "🇩🇪 DE2", "🇩🇪 DE1", "🇳🇱 NL2", "🇱🇻 LV1", "Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Google_Search.png"}
   - {"name": "GitHub", "type": "select", "proxies": ["Напрямую (провайдер)", "Авто — самый быстрый", "Авто — без Proton", "🇩🇪 DE2", "🇩🇪 DE1", "🇩🇪 DE4", "🇳🇱 NL2", "🇱🇻 LV1"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/GitHub.png"}
   - {"name": "Spotify", "type": "select", "proxies": ["Авто — самый быстрый", "Авто — без Proton", "🇩🇪 DE2", "🇩🇪 DE1", "🇩🇪 DE4", "🇳🇱 NL2", "🇱🇻 LV1", "Напрямую (провайдер)"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Spotify.png"}
   - {"name": "Steam", "type": "select", "proxies": ["Напрямую (провайдер)", "Авто — самый быстрый", "Авто — без Proton", "🇩🇪 DE2", "🇩🇪 DE1", "🇩🇪 DE4", "🇳🇱 NL2", "🇱🇻 LV1"], "icon": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Steam.png"}
@@ -284,8 +284,10 @@ rules:
   - GEOSITE,youtube,YouTube
   - DOMAIN-SUFFIX,ggpht.com,YouTube
   - DOMAIN-SUFFIX,google.ru,YouTube
-  # Google/Gemini — единая группа «Google» (Google -> ИИ -> «Авто — без Proton» по умолчанию: Google режет Proton-выходы)
+  # Google/Gemini — единая группа «Google» (Google -> ИИ -> дефолт «🇩🇪 DE4»: Google режет Proton-выходы и «Авто — без Proton» может уйти на нативный IPv6 NL2)
   - DOMAIN,gemini.google.com,Google
+  - DOMAIN,gemini.gstatic.com,Google
+  - DOMAIN,geminiweb-pa.clients6.google.com,Google
   - DOMAIN,aistudio.google.com,Google
   - DOMAIN,makersuite.google.com,Google
   - DOMAIN,bard.google.com,Google
